@@ -112,9 +112,9 @@ unidades_seq = list(range(0, max_unidades + 1))
 
 ingresos_brutos = [u * precio_venta for u in unidades_seq]
 impuestos_totales = [u * impuesto_por_unidad for u in unidades_seq]
-costos_variables_totales = [u * costo_variable for u in unidades_seq]
+costos_variables_totales = [u * costos_variable for u in unidades_seq]
 costos_totales_con_impuestos = [costos_fijos + cv + imp for cv, imp in zip(costos_variables_totales, impuestos_totales)]
-utilidad_neta = [ing - c_tot for ing, c_tot in zip(ingresos_brutos, costs_totales_con_impuestos)]
+utilidad_neta = [ing - c_tot for ing, c_tot in zip(ingresos_brutos, costos_totales_con_impuestos)]
 
 # Crear DataFrame estructurado
 df = pd.DataFrame({
