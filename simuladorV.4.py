@@ -222,7 +222,7 @@ with tab1:
                        xaxis_title="Unidades Totales del Mix", 
                        yaxis_title="Dinero ($)", 
                        hovermode="x unified", height=500)
-    st.plotly_chart(fig1, use_container_width=True)fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], 
+    st.plotly_chart(fig1, use_container_width=True) fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], 
     y=df_sensibilidad["Facturación de Equilibrio"], 
     name="Facturación Mínima de Equilibrio", 
     marker_color='crimson'))fig2.update_layout(barmode='group', 
