@@ -206,4 +206,28 @@ with tab2:
     fig2 = go.Figure()
     fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], y=df_sensibilidad["Costos Fijos Ajustados"], name="Costos Fijos Estresados", marker_color='orange'))
     fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], y=df_sensibilidad["Facturación de Equilibrio"], name="Facturación Mínima de Equilibrio", marker_color='crimson'))
-    fig2.update_layout(barmode='group', title="Análisis Comparativo de Carga Financiera por Escenario de Estrés", yaxis_title="Dinero ($)", height=500)st.plotly_chart(fig2, use_container_width=True)--- EXPORTACIONES COMPLETA DE RESULTADOS ---st.divider()st.subheader("📥 Exportación Consolidada de Datos")Procesamiento de múltiples hojas de Excel en memoriabuffer = io.BytesIO()with pd.ExcelWriter(buffer, engine='openpyxl') as writer:df_editado.to_excel(writer, index=False, sheet_name='Mix_Productos')df_sensibilidad.to_excel(writer, index=False, sheet_name='Analisis_Sensibilidad')excel_data = buffer.getvalue()st.download_button(label="📥 Descargar Reporte de Escenarios Completo (Excel)",data=excel_data,file_name="reporte_avanzado_equilibrio.xlsx",mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    fig2.update_layout(
+        barmode='group', 
+        title="Análisis Comparativo de Carga Financiera por Escenario de Estrés", 
+        yaxis_title="Dinero ($)", 
+        height=500
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+
+# --- EXPORTACIONES COMPLETA DE RESULTADOS ---
+st.divider()
+st.subheader("📥 Exportación Consolidada de Datos")
+
+# Procesamiento de múltiples hojas de Excel en memoria
+buffer = io.BytesIO()
+with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+    df_editado.to_excel(writer, index=False, sheet_name='Mix_Productos')
+    df_sensibilidad.to_excel(writer, index=False, sheet_name='Analisis_Sensibilidad')
+excel_data = buffer.getvalue()
+
+st.download_button(
+    label="📥 Descargar Reporte de Escenarios Completo (Excel)",
+    data=excel_data,
+    file_name="reporte_avanzado_equilibrio.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
