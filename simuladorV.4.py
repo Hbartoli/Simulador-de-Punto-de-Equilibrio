@@ -192,16 +192,56 @@ utilidades_mix = [ing - cos for ing, cos in zip(ingresos_mix, costos_mix)]
 
 with tab1:
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=unidades_seq, y=[costos_fijos]*len(unidades_seq), mode='lines', name='Costos Fijos Corporativos', line=dict(color='orange', dash='dash')))
-    fig1.add_trace(go.Scatter(x=unidades_seq, y=costos_mix, mode='lines', name='Costos Totales + Impuestos', line=dict(color='red')))
-    fig1.add_trace(go.Scatter(x=unidades_seq, y=ingresos_mix, mode='lines', name='Ingresos Totales Combinados', line=dict(color='green')))
+    fig1.add_trace(go.Scatter(x=unidades_seq, 
+                              y=[costos_fijos]*len(unidades_seq),
+                              mode='lines', name='Costos Fijos Corporativos', 
+                              line=dict(color='orange', dash='dash')))
+    fig1.add_trace(go.Scatter(x=unidades_seq, y=costos_mix, mode='lines', 
+                              name='Costos Totales + Impuestos', 
+                              line=dict(color='red')))
+    fig1.add_trace(go.Scatter(x=unidades_seq, y=ingresos_mix, 
+                              mode='lines', name='Ingresos Totales Combinados', 
+                              line=dict(color='green')))
     
-    fig1.add_trace(go.Scatter(x=[pe_unidades_global], y=[pe_unidades_global * precio_ponderado], mode='markers+text', name='PE Global', text=[f" PE ({pe_unidades_global:.1f} u)"], textposition="top left", marker=dict(color='black', size=12, symbol='x')))
-    fig1.add_trace(go.Scatter(x=[meta_unidades_global], y=[meta_unidades_global * precio_ponderado], mode='markers+text', name='Meta de Negocio', text=[f" Meta ({meta_unidades_global:.1f} u)"], textposition="top left", marker=dict(color='gold', size=12, symbol='star')))
+    fig1.add_trace(go.Scatter(x=[pe_unidades_global], y=[pe_unidades_global * precio_ponderado], 
+                              mode='markers+text', name='PE Global', 
+                              text=[f" PE ({pe_unidades_global:.1f} u)"], 
+                              textposition="top left", 
+                              marker=dict(color='black', 
+                              size=12, symbol='x')))
+    fig1.add_trace(go.Scatter(x=[meta_unidades_global], 
+                              y=[meta_unidades_global * precio_ponderado], 
+                              mode='markers+text', 
+                              name='Meta de Negocio', 
+                              text=[f" Meta ({meta_unidades_global:.1f} u)"], 
+                              textposition="top left", 
+                              marker=dict(color='gold', 
+                              size=12, symbol='star')))
     
-    fig1.update_layout(title="Curva de Equilibrio Basada en Margen Ponderado", xaxis_title="Unidades Totales del Mix", yaxis_title="Dinero ($)", hovermode="x unified", height=500)
+    fig1.update_layout(title="Curva de Equilibrio Basada en Margen Ponderado", 
+                       xaxis_title="Unidades Totales del Mix", 
+                       yaxis_title="Dinero ($)", 
+                       hovermode="x unified", height=500)
     st.plotly_chart(fig1, use_container_width=True)
+    fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], 
+    y=df_sensibilidad["Facturación de Equilibrio"], 
+    name="Facturación Mínima de Equilibrio", 
+    marker_color='crimson'))fig2.update_layout(barmode='group', 
+    title="Análisis Comparativo de Carga Financiera por Escenario de Estrés", 
+    yaxis_title="Dinero ($)", 
+    height=500)st.plotly_chart(fig2, use_container_width=True)--- EXPORTACIONES COMPLETA DE RESULTADOS ---st.divider()st.subheader("📥 Exportación Consolidada de Datos")Procesamiento de múltiples hojas de Excel en memoriabuffer = io.BytesIO()with pd.ExcelWriter(buffer, 
+    engine='openpyxl') as writer:df_editado.to_excel(writer, 
+    index=False, 
+    sheet_name='Mix_Productos')df_sensibilidad.to_excel(writer, 
+    index=False, 
+    sheet_name='Analisis_Sensibilidad')excel_data = buffer.getvalue()st.download_button(label="📥 Descargar Reporte de Escenarios Completo (Excel)",
+    data=excel_data,
+    file_name="reporte_avanzado_equilibrio.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 with tab2:
     fig2 = go.Figure()
-    fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], y=df_sensibilidad["Costos Fijos Ajustados"], name="Costos Fijos Estresados", marker_color='orange'))
+    fig2.add_trace(go.Bar(x=df_sensibilidad["Escenario"], 
+    y=df_sensibilidad["Costos Fijos Ajustados"], 
+    name="Costos Fijos Estresados", 
+    marker_color='orange'))
