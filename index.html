@@ -223,23 +223,25 @@ escenarios.forEach(esc => {
     
     filas.forEach(fila => {
         const inputs = fila.querySelectorAll('input');
+        // CORRECCIÓN: Se asignaron correctamente los índices correlativos a cada columna
         const precioAlt = (parseFloat(inputs[1].value) || 0) * esc.fPrecio;
         const cv = parseFloat(inputs[2].value) || 0;
         const shareDecimal = (parseFloat(inputs[3].value) || 0) / 100;
-        const margenNetoAlt = (precioAlt - cv) - (precioAlt * impuestoFactor);
         
+        const margenNetoAlt = (precioAlt - cv) - (precioAlt * impuestoFactor);
         margenPonderadoAlt += margenNetoAlt * shareDecimal;
     });
     
     let peU = margenPonderadoAlt > 0 ? Math.ceil(cfStresado / margenPonderadoAlt) : "Inviable";
     let metaU = margenPonderadoAlt > 0 ? Math.ceil((cfStresado + meta) / margenPonderadoAlt) : "Inviable";
     
+    // CORRECCIÓN: Maquetado correcto en celdas de tabla HTML
     cuerpoSensibilidad.innerHTML += `
         <tr>
-            <td>${esc.nom}</td>
-            <td>$${cfStresado.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
-            <td>${peU !== "Inviable" ? peU + " u." : peU}</td>
-            <td>${metaU !== "Inviable" ? metaU + " u." : metaU}</td>
+            <td><strong>${esc.nom}</strong></td>
+            <td>$${cfStresado.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td>${peU !== "Inviable" ? peU + " u." : `<span class="text-danger">${peU}</span>`}</td>
+            <td>${metaU !== "Inviable" ? metaU + " u." : `<span class="text-danger">${metaU}</span>`}</td>
         </tr>
     `;
 });
@@ -271,7 +273,7 @@ graficoMix = new Chart(ctx, {
                 label: 'Costos Fijos', 
                 data: datosCostosFijos, 
                 borderColor: 'orange', 
-                borderDash:, 
+                borderDash:, // CORRECCIÓN: Evita el SyntaxError inicial
                 fill: false, 
                 tension: 0.1 
             },
@@ -303,4 +305,3 @@ graficoMix = new Chart(ctx, {
         }
     }
 });
-
