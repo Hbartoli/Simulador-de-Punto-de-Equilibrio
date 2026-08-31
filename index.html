@@ -136,172 +136,184 @@
     </div>
 
     <script>
-        let graficoMix = null;
+        // Aseguramos que el código se ejecute cuando toda la página y elementos DOM estén listos
+window.onload = function() {
+    procesarSimulacion();
+};
 
-        function procesarSimulacion() {
-            // 1. Obtener valores globales corporativos
-            const cf = parseFloat(document.getElementById('costosFijos').value) || 0;
-            const meta = parseFloat(document.getElementById('metaGanancia').value) || 0;
-            const impuestoFactor = (parseFloat(document.getElementById('porcentajeImpuesto').value) || 0) / 100;
+function procesarSimulacion() {
+    // 1. CAPTURA SEGURA DE VARIABLES DESDE LA INTERFAZ DE LA PÁGINA
+    // Extraemos los valores numéricos de los Costos Fijos y Metas del simulador
+    const cf = parseFloat(document.querySelector('input[type="number"], #cf')?.value) || 2000;
+    const meta = parseFloat(document.querySelector('#meta')?.value) || 1500;
+    const impuestoFactor = (parseFloat(document.querySelector('#iva')?.value) || 21) / 100;
 
-            // 2. Extraer y procesar matriz de productos desde la tabla interactiva
-            const filas = document.querySelectorAll('#cuerpoProductos tr');
-            let totalShare = 0;
-            let margenNetoPonderado = 0;
-            let precioPonderado = 0;
-            let costoVariablePonderado = 0;
-            let impuestoPonderado = 0;
-            let productosData = [];
+    // Supongamos que calculas el totalShare sumando las columnas de la tabla de mezcla de ventas
+    const filas = document.querySelectorAll('#configProductos tbody tr, .fila-producto'); 
+    let totalShare = 0;
+    let margenNetoPonderado = 0;
+    let precioPonderado = 0;
+    let costoVariablePonderado = 0;
+    let impuestoPonderado = 0;
 
-            filas.forEach(fila => {
-                const inputs = fila.querySelectorAll('input');
-                const nombre = inputs[0].value;
-                const precio = parseFloat(inputs[1].value) || 0;
-                const cv = parseFloat(inputs[2].value) || 0;
-                const share = parseFloat(inputs[3].value) || 0;
-                
-                const impuesto = precio * impuestoFactor;
-                const margenNeto = (precio - cv) - impuesto;
-                
-                fila.querySelector('.margen-neto-res').textContent = `$${margenNeto.toFixed(2)}`;
-                
-                totalShare += share;
-                const shareDecimal = share / 100;
-                
-                margenNetoPonderado += margenNeto * shareDecimal;
-                precioPonderado += precio * shareDecimal;
-                costoVariablePonderado += cv * shareDecimal;
-                impuestoPonderado += impuesto * shareDecimal;
-
-                productosData.push({ nombre, shareDecimal, margenNeto });
-            });
-// Validación crítica del Share de ventas (acumulado igual a 100%)
-const alertBox = document.getElementById('alertShare');
-
-if (Math.abs(totalShare - 100) > 0.1) {
-    alertBox.style.display = 'block';
-    alertBox.textContent = `⚠️ La suma del Share de Ventas actual es ${totalShare.toFixed(1)}%. Debe ser exactamente 100%.`;
-    return;
-} else {
-    alertBox.style.display = 'none';
-}
-
-// 3. Cálculos de Puntos de Equilibrio Globales
-const peGlobalUnidades = margenNetoPonderado > 0 ? cf / margenNetoPonderado : 0;
-const metaGlobalUnidades = margenNetoPonderado > 0 ? (cf + meta) / margenNetoPonderado : 0;
-
-// 4. Renderizar Tarjetas de Distribución Comercial (Unidades por Producto)
-const contenedorDists = document.getElementById('distribucionKpis');
-contenedorDists.innerHTML = '';
-
-productosData.forEach(prod => {
-    const uPE = Math.ceil(peGlobalUnidades * prod.shareDecimal);
-    const uMeta = Math.ceil(metaGlobalUnidades * prod.shareDecimal);
-    
-    contenedorDists.innerHTML += `
-        <div class="dist-card"> 
-            <h4>📦 ${prod.nombre}</h4> 
-            <div class="dist-metric">Punto Equilibrio: <span>${uPE} u.</span></div> 
-            <div class="dist-metric">Volumen Objetivo: <span>${uMeta} u.</span></div> 
-        </div>
-    `;
-});
-
-// 5. Análisis de Sensibilidad Automático (Matriz de estrés de escenarios corporativos)
-const escenarios = [
-    { nom: "📉 Pesimista (-15% precio, +10% CF)", fPrecio: 0.85, fCF: 1.10 },
-    { nom: "⚖️ Esperado (Base Actual)", fPrecio: 1.00, fCF: 1.00 },
-    { nom: "📈 Optimista (+10% precio, -5% CF)", fPrecio: 1.10, fCF: 0.95 }
-];
-
-const cuerpoSensibilidad = document.getElementById('cuerpoSensibilidad');
-cuerpoSensibilidad.innerHTML = '';
-
-escenarios.forEach(esc => {
-    const cfStresado = cf * esc.fCF;
-    let margenPonderadoAlt = 0;
-    
+    // Procesamiento previo de datos de productos para el cálculo global
+    let productosData = [];
     filas.forEach(fila => {
         const inputs = fila.querySelectorAll('input');
-        // CORRECCIÓN: Se asignaron correctamente los índices correlativos a cada columna
-        const precioAlt = (parseFloat(inputs[1].value) || 0) * esc.fPrecio;
-        const cv = parseFloat(inputs[2].value) || 0;
-        const shareDecimal = (parseFloat(inputs[3].value) || 0) / 100;
-        
-        const margenNetoAlt = (precioAlt - cv) - (precioAlt * impuestoFactor);
-        margenPonderadoAlt += margenNetoAlt * shareDecimal;
-    });
-    
-    let peU = margenPonderadoAlt > 0 ? Math.ceil(cfStresado / margenPonderadoAlt) : "Inviable";
-    let metaU = margenPonderadoAlt > 0 ? Math.ceil((cfStresado + meta) / margenPonderadoAlt) : "Inviable";
-    
-    // CORRECCIÓN: Maquetado correcto en celdas de tabla HTML
-    cuerpoSensibilidad.innerHTML += `
-        <tr>
-            <td><strong>${esc.nom}</strong></td>
-            <td>$${cfStresado.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-            <td>${peU !== "Inviable" ? peU + " u." : `<span class="text-danger">${peU}</span>`}</td>
-            <td>${metaU !== "Inviable" ? metaU + " u." : `<span class="text-danger">${metaU}</span>`}</td>
-        </tr>
-    `;
-});
+        if(inputs.length >= 4) {
+            const nombre = inputs[0].value || "Producto";
+            const precio = parseFloat(inputs[1].value) || 0;
+            const cv = parseFloat(inputs[2].value) || 0;
+            const share = parseFloat(inputs[3].value) || 0;
+            const shareDec = share / 100;
 
-// 6. Construcción y Renderizado de la Curva Gráfica Dinámica (Chart.js)
-const maxUnidades = Math.ceil(metaGlobalUnidades * 1.5) || 10;
-const etiquetasUnidades = [];
-const datosCostosFijos = [];
-const datosCostosTotales = [];
-const datosIngresosTotales = [];
+            totalShare += share;
+            
+            const margenNeto = (precio - cv) - (precio * impuestoFactor);
+            margenNetoPonderado += margenNeto * shareDec;
+            precioPonderado += precio * shareDec;
+            costoVariablePonderado += cv * shareDec;
+            impuestoPonderado += (precio * impuestoFactor) * shareDec;
 
-for (let i = 0; i <= 5; i++) {
-    const u = Math.round((maxUnidades / 5) * i);
-    etiquetasUnidades.push(`${u} u.`);
-    datosCostosFijos.push(cf);
-    datosCostosTotales.push(cf + (u * (costoVariablePonderado + impuestoPonderado)));
-    datosIngresosTotales.push(u * precioPonderado);
-}
-
-const ctx = document.getElementById('mixChart').getContext('2d');
-if (graficoMix) graficoMix.destroy();
-
-graficoMix = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: etiquetasUnidades,
-        datasets: [
-            { 
-                label: 'Costos Fijos', 
-                data: datosCostosFijos, 
-                borderColor: 'orange', 
-                borderDash:, // CORRECCIÓN: Evita el SyntaxError inicial
-                fill: false, 
-                tension: 0.1 
-            },
-            { 
-                label: 'Costos Totales + Impuestos', 
-                data: datosCostosTotales, 
-                borderColor: 'red', 
-                fill: false, 
-                tension: 0.1 
-            },
-            { 
-                label: 'Ingresos Totales Combinados', 
-                data: datosIngresosTotales, 
-                borderColor: 'green', 
-                fill: false, 
-                tension: 0.1 
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: { title: { display: true, text: 'Dinero ($)' } },
-            x: { title: { display: true, text: 'Unidades del Mix' } }
-        },
-        plugins: { 
-            legend: { position: 'bottom' } 
+            productosData.push({ nombre, shareDecimal: shareDec });
         }
+    });
+
+    // 2. VALIDACIÓN CRÍTICA DEL SHARE DE VENTAS
+    const alertBox = document.getElementById('alertShare');
+    if (!alertBox) return;
+
+    if (Math.abs(totalShare - 100) > 0.1) {
+        alertBox.style.display = 'block';
+        alertBox.textContent = `⚠️ La suma del Share de Ventas actual es ${totalShare.toFixed(1)}%. Debe ser exactamente 100%.`;
+        return;
+    } else {
+        alertBox.style.display = 'none';
     }
-});
+
+    // 3. CÁLCULOS DE PUNTOS DE EQUILIBRIO GLOBALES
+    const peGlobalUnidades = margenNetoPonderado > 0 ? cf / margenNetoPonderado : 0;
+    const metaGlobalUnidades = margenNetoPonderado > 0 ? (cf + meta) / margenNetoPonderado : 0;
+
+    // 4. RENDERIZAR TARJETAS DE DISTRIBUCIÓN COMERCIAL
+    const contenedorDists = document.getElementById('distribucionKpis');
+    if (contenedorDists) {
+        contenedorDists.innerHTML = '';
+        productosData.forEach(prod => {
+            const uPE = Math.ceil(peGlobalUnidades * prod.shareDecimal);
+            const uMeta = Math.ceil(metaGlobalUnidades * prod.shareDecimal);
+            
+            contenedorDists.innerHTML += `
+                <div class="dist-card"> 
+                    <h4>📦 ${prod.nombre}</h4> 
+                    <div class="dist-metric">Punto Equilibrio: <span>${uPE} u.</span></div> 
+                    <div class="dist-metric">Volumen Objetivo: <span>${uMeta} u.</span></div> 
+                </div>
+            `;
+        });
+    }
+
+    // 5. ANÁLISIS DE SENSIBILIDAD AUTOMÁTICO (Matriz de estrés)
+    const escenarios = [
+        { nom: "📉 Pesimista (-15% precio, +10% CF)", fPrecio: 0.85, fCF: 1.10 },
+        { nom: "⚖️ Esperado (Base Actual)", fPrecio: 1.00, fCF: 1.00 },
+        { nom: "📈 Optimista (+10% precio, -5% CF)", fPrecio: 1.10, fCF: 0.95 }
+    ];
+
+    const cuerpoSensibilidad = document.getElementById('cuerpoSensibilidad');
+    if (cuerpoSensibilidad) {
+        cuerpoSensibilidad.innerHTML = '';
+        escenarios.forEach(esc => {
+            const cfStresado = cf * esc.fCF;
+            let margenPonderadoAlt = 0;
+            
+            filas.forEach(fila => {
+                const inputs = fila.querySelectorAll('input');
+                if(inputs.length >= 4) {
+                    const precioAlt = (parseFloat(inputs[1].value) || 0) * esc.fPrecio;
+                    const cv = parseFloat(inputs[2].value) || 0;
+                    const shareDecimal = (parseFloat(inputs[3].value) || 0) / 100;
+                    const margenNetoAlt = (precioAlt - cv) - (precioAlt * impuestoFactor);
+                    margenPonderadoAlt += margenNetoAlt * shareDecimal;
+                }
+            });
+            
+            let peU = margenPonderadoAlt > 0 ? Math.ceil(cfStresado / margenPonderadoAlt) : "Inviable";
+            let metaU = margenPonderadoAlt > 0 ? Math.ceil((cfStresado + meta) / margenPonderadoAlt) : "Inviable";
+            
+            cuerpoSensibilidad.innerHTML += `
+                <tr>
+                    <td><strong>${esc.nom}</strong></td>
+                    <td>$${cfStresado.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    <td>${peU !== "Inviable" ? peU + " u." : peU}</td>
+                    <td>${metaU !== "Inviable" ? metaU + " u." : metaU}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // 6. CONSTRUCCIÓN Y RENDERIZADO DE LA CURVA GRÁFICA DINÁMICA (Chart.js)
+    const maxUnidades = Math.ceil(metaGlobalUnidades * 1.5) || 10;
+    const etiquetasUnidades = [];
+    const datosCostosFijos = [];
+    const datosCostosTotales = [];
+    const datosIngresosTotales = [];
+
+    for (let i = 0; i <= 5; i++) {
+        const u = Math.round((maxUnidades / 5) * i);
+        etiquetasUnidades.push(`${u} u.`);
+        datosCostosFijos.push(cf);
+        datosCostosTotales.push(cf + (u * (costoVariablePonderado + impuestoPonderado)));
+        datosIngresosTotales.push(u * precioPonderado);
+    }
+
+    const mixChartEl = document.getElementById('mixChart');
+    if (!mixChartEl) return;
+    
+    const ctx = mixChartEl.getContext('2d');
+    
+    // Verificamos si existe un gráfico previo guardado de forma global para destruirlo
+    if (window.graficoMix) window.graficoMix.destroy();
+
+    window.graficoMix = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: etiquetasUnidades,
+            datasets: [
+                { 
+                    label: 'Costos Fijos', 
+                    data: datosCostosFijos, 
+                    borderColor: 'orange', 
+                    borderDash: [5, 5], // CORREGIDO: Array válido para líneas punteadas sin romper JS
+                    fill: false, 
+                    tension: 0.1 
+                },
+                { 
+                    label: 'Costos Totales + Impuestos', 
+                    data: datosCostosTotales, 
+                    borderColor: 'red', 
+                    fill: false, 
+                    tension: 0.1 
+                },
+                { 
+                    label: 'Ingresos Totales Combinados', 
+                    data: datosIngresosTotales, 
+                    borderColor: 'green', 
+                    fill: false, 
+                    tension: 0.1 
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { title: { display: true, text: 'Dinero ($)' } },
+                x: { title: { display: true, text: 'Unidades del Mix' } }
+            },
+            plugins: { 
+                legend: { position: 'bottom' } 
+            }
+        }
+    });
+}
